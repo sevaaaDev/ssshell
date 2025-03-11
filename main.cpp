@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <errno.h>
 #include <iostream>
+#include <memory>
 #include <string.h>
 #include <string>
 #include <sys/wait.h>
@@ -13,7 +14,6 @@ private:
   std::vector<char *> m_ParsedBuffer{};
   std::string m_InputBuffer{};
   std::array<std::string, 2> m_BuiltInCmd;
-  std::string cwd{};
   std::string prompt{"> "};
   void fsh_cd() {
     if (m_ParsedBuffer[1] != nullptr) {
@@ -21,28 +21,23 @@ private:
       update_cwd();
     }
   };
-  void fsh_exit() { exit(0); };
+  void fsh_exit() {
+    std::cout << "\nexit" << std::endl;
+    exit(0);
+  };
   void update_cwd() {
     // TODO: this seems overkill
-    char *cwdir = getcwd(nullptr, 0);
-    cwd = cwdir;
-    free(cwdir);
-    prompt = cwd + "> ";
+    std::unique_ptr<char> cwdir(getcwd(nullptr, 0));
+    prompt = std::string(cwdir.get()) + "> ";
   }
 
 public:
-  Forshell() : m_BuiltInCmd({"cd", "exit"}) {
-    char *cwdir = getcwd(nullptr, 0);
-    cwd = cwdir;
-    free(cwdir);
-    prompt = cwd + "> ";
-  }
+  Forshell() : m_BuiltInCmd({"cd", "exit"}) { update_cwd(); }
   void shell_getline() {
     std::cout << prompt;
     std::getline(std::cin, m_InputBuffer, '\n');
     if (std::cin.eof()) {
-      std::cout << "\nexit" << std::endl;
-      exit(0);
+      fsh_exit();
     }
   }
   void shell_parse() {
