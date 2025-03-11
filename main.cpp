@@ -74,6 +74,9 @@ public:
     }
   }
   void shell_exec() {
+    if (m_ParsedBuffer[0] == nullptr) {
+      return;
+    }
     std::string cmd = m_ParsedBuffer[0];
     if (cmd == "exit") {
       fsh_exit();
