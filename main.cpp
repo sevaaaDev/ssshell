@@ -40,6 +40,10 @@ public:
   void shell_getline() {
     std::cout << prompt;
     std::getline(std::cin, m_InputBuffer, '\n');
+    if (std::cin.eof()) {
+      std::cout << "\nexit" << std::endl;
+      exit(0);
+    }
   }
   void shell_parse() {
     for (int i = 0, pos = 0; i < m_InputBuffer.length(); i++) {
