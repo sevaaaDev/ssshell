@@ -77,8 +77,13 @@ public:
       // NOTE: child
       int errcode = execvp(m_ParsedBuffer[0], m_ParsedBuffer.data());
       if (errcode == -1) {
-        std::cout << strerror(errno) << std::endl;
-        exit(2);
+        if (errno == ENOENT) {
+          std::cout << m_ParsedBuffer[0] << ": command not found" << std::endl;
+          exit(127);
+        } else {
+          std::cout << strerror(errno) << std::endl;
+          exit(126);
+        }
       }
     } else {
       // NOTE: parent
