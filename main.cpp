@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string.h>
 #include <string>
 #include <sys/wait.h>
@@ -46,13 +47,7 @@ private:
       for (int i = 0; i < m_HistoryBuffer.size() - 1; i++) {
         std::cout << "  " << i << "  " << m_HistoryBuffer[i] << std::endl;
       }
-      return;
     }
-    std::string arg = m_ParsedBuffer[1];
-    shell_clearBuffer();
-    m_InputBuffer = m_HistoryBuffer[std::stoi(arg)];
-    shell_parse();
-    shell_exec();
   }
   void update_cwd() {
     std::unique_ptr<char> cwdir(getcwd(nullptr, 0));
@@ -64,6 +59,20 @@ private:
     }
     m_HistoryBuffer.push_back(m_InputBuffer);
   }
+  std::string expandString(std::string &string) {
+    if (string == "!!") {
+      return m_HistoryBuffer.back();
+    }
+    if (string[0] == '!') {
+      try {
+        int n = std::stoi(&string[1]);
+        return m_HistoryBuffer[n];
+      } catch (std::invalid_argument const &err) {
+        std::cerr << "fsh: " << err.what() << std::endl;
+      }
+    }
+    return string;
+  }
 
 public:
   Forshell() : m_BuiltInCmd({"cd", "exit"}) { update_cwd(); }
@@ -73,6 +82,7 @@ public:
     if (std::cin.eof()) {
       fsh_exit();
     }
+    m_InputBuffer = expandString(m_InputBuffer);
     add_history();
   }
   void shell_parse() {
