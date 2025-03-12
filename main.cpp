@@ -1,5 +1,7 @@
 #include <array>
 #include <cerrno>
+#include <csignal>
+#include <cstdlib>
 #include <errno.h>
 #include <iostream>
 #include <memory>
@@ -9,24 +11,35 @@
 #include <unistd.h>
 #include <vector>
 
+void handle_SIGTSTP(int sig) { return; }
+
 class Forshell {
 private:
   std::vector<char *> m_ParsedBuffer{};
   std::string m_InputBuffer{};
   std::array<std::string, 2> m_BuiltInCmd;
   std::string prompt{"> "};
+  int exitCode{};
   void fsh_cd() {
     if (m_ParsedBuffer[1] != nullptr) {
       chdir(m_ParsedBuffer[1]);
       update_cwd();
     }
   };
+  void fsh_echo() {
+    if (m_ParsedBuffer[1] != nullptr) {
+      if (std::string_view(m_ParsedBuffer[1]) == "$?") {
+        std::cout << exitCode << std::endl;
+        return;
+      }
+      std::cout << m_ParsedBuffer[1] << std::endl;
+    }
+  }
   void fsh_exit() {
     std::cout << "\nexit" << std::endl;
     exit(0);
   };
   void update_cwd() {
-    // TODO: this seems overkill
     std::unique_ptr<char> cwdir(getcwd(nullptr, 0));
     prompt = std::string(cwdir.get()) + "> ";
   }
@@ -69,7 +82,14 @@ public:
       }
     } else {
       // NOTE: parent
-      wait(nullptr);
+      int status;
+      pid_t wpid = waitpid(-1, &status, 0);
+      if (WIFEXITED(status)) {
+        exitCode = WEXITSTATUS(status);
+      }
+      if (WIFSIGNALED(status)) {
+        exitCode = WTERMSIG(status) + 128;
+      }
       std::cout << "fsh: done deal" << std::endl;
     }
   }
@@ -84,6 +104,10 @@ public:
     }
     if (cmd == "cd") {
       fsh_cd();
+      return;
+    }
+    if (cmd == "echo") {
+      fsh_echo();
       return;
     }
     shell_exec_external();
@@ -105,6 +129,7 @@ public:
 // TODO:
 // - cd
 int main() {
+  signal(SIGTSTP, handle_SIGTSTP);
   Forshell shell;
   while (true) {
     shell.shell_loop();
