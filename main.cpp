@@ -19,7 +19,9 @@ private:
   std::string m_InputBuffer{};
   std::array<std::string, 2> m_BuiltInCmd;
   std::string prompt{"> "};
-  int exitCode{};
+  int m_exitCode{};
+  int m_histsize = 10;
+  std::vector<std::string> m_HistoryBuffer{};
   void fsh_cd() {
     if (m_ParsedBuffer[1] != nullptr) {
       chdir(m_ParsedBuffer[1]);
@@ -29,7 +31,7 @@ private:
   void fsh_echo() {
     if (m_ParsedBuffer[1] != nullptr) {
       if (std::string_view(m_ParsedBuffer[1]) == "$?") {
-        std::cout << exitCode << std::endl;
+        std::cout << m_exitCode << std::endl;
         return;
       }
       std::cout << m_ParsedBuffer[1] << std::endl;
@@ -39,9 +41,28 @@ private:
     std::cout << "\nexit" << std::endl;
     exit(0);
   };
+  void fsh_history() {
+    if (m_ParsedBuffer[1] == nullptr) {
+      for (int i = 0; i < m_HistoryBuffer.size() - 1; i++) {
+        std::cout << "  " << i << "  " << m_HistoryBuffer[i] << std::endl;
+      }
+      return;
+    }
+    std::string arg = m_ParsedBuffer[1];
+    shell_clearBuffer();
+    m_InputBuffer = m_HistoryBuffer[std::stoi(arg)];
+    shell_parse();
+    shell_exec();
+  }
   void update_cwd() {
     std::unique_ptr<char> cwdir(getcwd(nullptr, 0));
     prompt = std::string(cwdir.get()) + "> ";
+  }
+  void add_history() {
+    if (m_HistoryBuffer.size() > m_histsize) {
+      m_HistoryBuffer.erase(m_HistoryBuffer.begin());
+    }
+    m_HistoryBuffer.push_back(m_InputBuffer);
   }
 
 public:
@@ -52,6 +73,7 @@ public:
     if (std::cin.eof()) {
       fsh_exit();
     }
+    add_history();
   }
   void shell_parse() {
     for (int i = 0, pos = 0; i < m_InputBuffer.length(); i++) {
@@ -90,10 +112,10 @@ public:
       int status;
       pid_t wpid = waitpid(-1, &status, 0);
       if (WIFEXITED(status)) {
-        exitCode = WEXITSTATUS(status);
+        m_exitCode = WEXITSTATUS(status);
       }
       if (WIFSIGNALED(status)) {
-        exitCode = WTERMSIG(status) + 128;
+        m_exitCode = WTERMSIG(status) + 128;
       }
       std::cout << "fsh: done deal" << std::endl;
     }
@@ -113,6 +135,10 @@ public:
     }
     if (cmd == "echo") {
       fsh_echo();
+      return;
+    }
+    if (cmd == "history") {
+      fsh_history();
       return;
     }
     shell_exec_external();
