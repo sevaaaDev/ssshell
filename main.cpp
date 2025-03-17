@@ -82,6 +82,8 @@ public:
     if (std::cin.eof()) {
       fsh_exit();
     }
+    int pos = m_InputBuffer.find_first_not_of(' ');
+    m_InputBuffer.erase(0, pos);
     m_InputBuffer = expandString(m_InputBuffer);
     add_history();
   }
@@ -93,7 +95,7 @@ public:
       }
       if (*c == ' ') {
         pos = i + 1;
-        *c = 0;
+        *c = '\0';
       }
     }
     m_ParsedBuffer.push_back(nullptr);
