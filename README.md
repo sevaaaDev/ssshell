@@ -1,0 +1,13 @@
+## goals
+- [ ] history
+    - [x] !! and !n
+    - [ ] arrow key keybind
+- [ ] redirection (> >> < <<) and pipe
+- [ ] and (&&) or (||)
+- [ ] multiple command in one line (;)
+- [ ] job control
+- [ ] quotes and escape
+- [ ] globbing
+- [ ] subshell
+- [ ] variable and env var
+- [ ] control structure
