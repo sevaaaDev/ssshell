@@ -19,6 +19,7 @@ private:
   std::vector<char *> m_ParsedBuffer{};
   std::string m_InputBuffer{};
   std::array<std::string, 2> m_BuiltInCmd;
+  std::vector<char *> m_CommandQueue{};
   std::string prompt{"> "};
   int m_exitCode{};
   int m_histsize = 10;
@@ -88,8 +89,14 @@ public:
     add_history();
   }
   void shell_parse() {
-    for (int i = 0, pos = 0; i < m_InputBuffer.length(); i++) {
-      char *c = &m_InputBuffer.at(i);
+    shell_parse_cmd();
+    for (auto &cmd : m_CommandQueue) {
+      shell_parse_args(cmd);
+    }
+  }
+  void shell_parse_args(std::string_view cmd) {
+    for (int i = cmd.find_first_not_of(' '), pos = i; i < cmd.length(); i++) {
+      char *c = const_cast<char *>(&cmd.at(i));
       if (i == pos) {
         m_ParsedBuffer.push_back(c);
       }
@@ -98,8 +105,21 @@ public:
         *c = '\0';
       }
     }
+    // TODO: remove leading whitespace
     m_ParsedBuffer.push_back(nullptr);
-  }
+  };
+  void shell_parse_cmd() {
+    for (int i = 0, pos = 0; i < m_InputBuffer.length(); i++) {
+      char *c = &m_InputBuffer.at(i);
+      if (i == pos) {
+        m_CommandQueue.push_back(c);
+      }
+      if (*c == ';') {
+        pos = i + 1;
+        *c = '\0';
+      }
+    }
+  };
   void shell_exec_builtin() {}
   void shell_exec_external() {
     pid_t pid = fork();
@@ -132,6 +152,39 @@ public:
       std::cout << "fsh: done deal" << std::endl;
     }
   }
+  void shell_exec_with_pipes() {
+    int pipefd[2];
+    int pipeerr = pipe(pipefd);
+    if (pipeerr == -1) {
+      exit(2);
+    }
+    pid_t pid1 = fork();
+    if (pid1 == -1) {
+      exit(1);
+    };
+    if (pid1 == 0) {
+      dup2(pipefd[1], STDOUT_FILENO);
+      close(pipefd[0]);
+      // TODO: exec first cmd
+    } else {
+      // parent
+      pid_t pid2 = fork();
+      if (pid2 == -1) {
+        exit(1);
+      }
+      if (pid2 == 0) {
+        dup2(pipefd[0], STDIN_FILENO);
+        close(pipefd[1]);
+        // TODO: exec second cmd
+      } else {
+        close(pipefd[0]);
+        close(pipefd[1]);
+        waitpid(pid1, nullptr, 0);
+        waitpid(pid2, nullptr, 0);
+        // TODO: handle exit code;
+      }
+    }
+  }
   void shell_exec() {
     if (m_ParsedBuffer[0] == nullptr) {
       return;
@@ -160,11 +213,18 @@ public:
     m_ParsedBuffer.shrink_to_fit();
     m_InputBuffer.clear();
     m_InputBuffer.shrink_to_fit();
+    m_CommandQueue.clear();
+    m_CommandQueue.shrink_to_fit();
   }
   void shell_loop() {
     shell_getline();
-    shell_parse();
-    shell_exec();
+    shell_parse_cmd();
+    for (auto cmd : m_CommandQueue) {
+      shell_parse_args(cmd);
+      shell_exec();
+      m_ParsedBuffer.clear();
+      m_ParsedBuffer.shrink_to_fit();
+    }
     shell_clearBuffer();
   }
 };
@@ -182,3 +242,20 @@ int main() {
   // parse
   // exec - output
 }
+
+int exec_program(std::vector<char *> cmd) {
+  int errcode = execvp(cmd[0], cmd.data());
+  if (errno == ENOENT) {
+    return 127;
+  }
+  return 126;
+}
+
+/*
+ if (piping) {
+ shell_exec_with_pipes()
+ }
+ else {
+ shell_exec_external()
+ }
+*/
