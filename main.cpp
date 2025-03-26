@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <csignal>
 #include <cstdlib>
+#include <deque>
 #include <errno.h>
 #include <iostream>
 #include <memory>
@@ -12,17 +13,37 @@
 #include <unistd.h>
 #include <vector>
 
+// TODO: refactor the function to return the buffer instead of modifying global
+// buf
+
+using CmdVector = std::vector<char *>;
+
 void handle_SIGTSTP(int sig) { return; }
+enum ChainTypes {
+  PIPE = 1,
+  AND,
+  OR,
+  CHAIN,
+};
+
+struct Command {
+  char *cmd;
+  ChainTypes indicator;
+};
 
 class Forshell {
 private:
   std::vector<char *> m_ParsedBuffer{};
   std::string m_InputBuffer{};
   std::array<std::string, 2> m_BuiltInCmd;
-  std::vector<char *> m_CommandQueue{};
+  std::deque<char *> m_CommandQueue{};
+  std::deque<ChainTypes> m_ChainTypeQueue{};
   std::string prompt{"> "};
   int m_exitCode{};
   int m_histsize = 10;
+  bool m_isPipe = false;
+  bool m_isAND = false;
+  bool m_isOR = false;
   std::vector<std::string> m_HistoryBuffer{};
   void fsh_cd() {
     if (m_ParsedBuffer[1] != nullptr) {
@@ -88,40 +109,72 @@ public:
     m_InputBuffer = expandString(m_InputBuffer);
     add_history();
   }
-  void shell_parse() {
-    shell_parse_cmd();
-    for (auto &cmd : m_CommandQueue) {
-      shell_parse_args(cmd);
-    }
-  }
-  void shell_parse_args(std::string_view cmd) {
+  CmdVector parse_args(std::string_view cmd) {
+    std::vector<char *> parsed;
     for (int i = cmd.find_first_not_of(' '), pos = i; i < cmd.length(); i++) {
       char *c = const_cast<char *>(&cmd.at(i));
       if (i == pos) {
-        m_ParsedBuffer.push_back(c);
+        parsed.push_back(c);
       }
       if (*c == ' ') {
         pos = i + 1;
         *c = '\0';
       }
     }
-    // TODO: remove leading whitespace
-    m_ParsedBuffer.push_back(nullptr);
+    parsed.push_back(nullptr);
+    return parsed;
   };
-  void shell_parse_cmd() {
+  void parse_cmd(std::deque<char *> &m_CommandQueue,
+                 std::deque<ChainTypes> &m_ChainTypeQueue) {
+    bool foundAND = false;
+    bool foundOR = false;
+    ChainTypes indicator = CHAIN;
     for (int i = 0, pos = 0; i < m_InputBuffer.length(); i++) {
       char *c = &m_InputBuffer.at(i);
       if (i == pos) {
         m_CommandQueue.push_back(c);
+        if (i != 0) {
+          m_ChainTypeQueue.push_back(indicator);
+        }
       }
       if (*c == ';') {
         pos = i + 1;
         *c = '\0';
+        indicator = CHAIN;
       }
+      if (*c == '|') {
+        // BUG: pipe and or have the same first char (|), u really need to
+        // refactor this
+        if (m_InputBuffer[i + 1] == '|') {
+          if (foundAND)
+            return;
+          pos = i + 1;
+          indicator = OR;
+          *c = '\0';
+          foundOR = !foundOR;
+          continue;
+        }
+        pos = i + 1;
+        *c = '\0';
+        indicator = PIPE;
+      }
+      if (*c == '&') {
+        if (foundOR)
+          return;
+        if (foundAND) {
+          pos = i + 1;
+          indicator = AND;
+        }
+        *c = '\0';
+        foundAND = !foundAND;
+      }
+      // TODO: syntax error when &| used
+      // altho it should be piping std error, but i havent implement it so it
+      // should be syntax error
+      // TODO: change how we parse the line, maybe use string.find instead
     }
   };
-  void shell_exec_builtin() {}
-  void shell_exec_external() {
+  void shell_exec_external(std::vector<char *> &parsed) {
     pid_t pid = fork();
     if (pid == -1) {
       std::cerr << "fork failed" << std::endl;
@@ -129,10 +182,10 @@ public:
     }
     if (pid == 0) {
       // NOTE: child
-      int errcode = execvp(m_ParsedBuffer[0], m_ParsedBuffer.data());
+      int errcode = execvp(parsed[0], parsed.data());
       if (errcode == -1) {
         if (errno == ENOENT) {
-          std::cout << m_ParsedBuffer[0] << ": command not found" << std::endl;
+          std::cout << parsed[0] << ": command not found" << std::endl;
           exit(127);
         } else {
           std::cout << strerror(errno) << std::endl;
@@ -149,10 +202,11 @@ public:
       if (WIFSIGNALED(status)) {
         m_exitCode = WTERMSIG(status) + 128;
       }
-      std::cout << "fsh: done deal" << std::endl;
+      // std::cout << "fsh: done deal" << std::endl;
     }
   }
-  void shell_exec_with_pipes() {
+  void shell_exec_with_pipes(std::vector<char *> &cmd,
+                             std::vector<char *> &cmd2) {
     int pipefd[2];
     int pipeerr = pipe(pipefd);
     if (pipeerr == -1) {
@@ -185,11 +239,11 @@ public:
       }
     }
   }
-  void shell_exec() {
-    if (m_ParsedBuffer[0] == nullptr) {
+  void shell_exec(std::vector<char *> &parsed) {
+    if (parsed[0] == nullptr) {
       return;
     }
-    std::string cmd = m_ParsedBuffer[0];
+    std::string cmd = parsed[0];
     if (cmd == "exit") {
       fsh_exit();
       return;
@@ -206,7 +260,7 @@ public:
       fsh_history();
       return;
     }
-    shell_exec_external();
+    shell_exec_external(parsed);
   }
   void shell_clearBuffer() {
     m_ParsedBuffer.clear();
@@ -218,12 +272,40 @@ public:
   }
   void shell_loop() {
     shell_getline();
-    shell_parse_cmd();
-    for (auto cmd : m_CommandQueue) {
-      shell_parse_args(cmd);
-      shell_exec();
-      m_ParsedBuffer.clear();
-      m_ParsedBuffer.shrink_to_fit();
+    parse_cmd(m_CommandQueue, m_ChainTypeQueue);
+    ChainTypes indicator;
+    while (!m_CommandQueue.empty()) {
+      CmdVector cmd = parse_args(m_CommandQueue.front());
+      m_CommandQueue.pop_front();
+      if (m_ChainTypeQueue.empty()) {
+        shell_exec(cmd);
+        break;
+      }
+      ChainTypes chain = m_ChainTypeQueue.front();
+      m_ChainTypeQueue.pop_front();
+      switch (chain) {
+      case PIPE: {
+        CmdVector cmd2 = parse_args(m_CommandQueue.front());
+        m_CommandQueue.pop_front();
+        shell_exec_with_pipes(cmd, cmd2);
+        break;
+      }
+      case AND:
+        shell_exec(cmd);
+        if (m_exitCode != 0) {
+          m_CommandQueue.pop_front();
+        }
+        break;
+      case OR:
+        shell_exec(cmd);
+        if (m_exitCode == 0) {
+          m_CommandQueue.pop_front();
+        }
+        break;
+      case CHAIN:
+        shell_exec(cmd);
+        break;
+      }
     }
     shell_clearBuffer();
   }
@@ -237,25 +319,10 @@ int main() {
   while (true) {
     shell.shell_loop();
   }
-  //
-  // get input
-  // parse
-  // exec - output
+  // inputBuff
+  // cmdQueue
+  // get input()
+  // parse cmd()
+  // parsed = parse args(cmd)
+  // exec(parsed)
 }
-
-int exec_program(std::vector<char *> cmd) {
-  int errcode = execvp(cmd[0], cmd.data());
-  if (errno == ENOENT) {
-    return 127;
-  }
-  return 126;
-}
-
-/*
- if (piping) {
- shell_exec_with_pipes()
- }
- else {
- shell_exec_external()
- }
-*/
