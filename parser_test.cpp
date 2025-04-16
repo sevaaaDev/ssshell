@@ -44,4 +44,13 @@ int main() {
     assert(std::string_view(parsed[1]) == "hell"sv);
     std::cout << "Success" << std::endl;
   }
+  {
+    std::cout << "get empty vector when command empty" << std::endl;
+    std::string str = "ls -la ";
+    Parser parser(str);
+    parser.getNextCmd();
+    std::vector<char *> parsed = parser.getNextCmd();
+    assert(parsed.size() == 0);
+    std::cout << "Success" << std::endl;
+  }
 }
