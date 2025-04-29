@@ -23,5 +23,5 @@ int main() {
     std::vector<char *> cmd = parser.getNextCmd();
     loop = executioner.exec(cmd);
   } while (loop);
-  return executioner.exitCode;
+  return executioner.exitCode_;
 }
