@@ -12,7 +12,7 @@ public:
 
 public:
   /*@return false if should quit*/
-  bool exec(std::vector<char *> &cmd);
+  bool exec(std::string, std::vector<char *> &);
   bool execWithPipe(std::vector<char *> &, std::vector<char *> &);
 
 private:

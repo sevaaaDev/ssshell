@@ -6,18 +6,17 @@
 #include <vector>
 #include <wait.h>
 
-bool Executioner::exec(std::vector<char *> &cmd) {
-  std::string str = cmd[0];
+bool Executioner::exec(std::string cmd, std::vector<char *> &args) {
   // TODO: does map store its key?
   // if not then we can use str view instead
-  if (builtin_.count(str) == 1) {
-    auto result = builtin_[str]();
+  if (builtin_.count(cmd) == 1) {
+    auto result = builtin_[cmd]();
     if (result.exitCode >= 0) {
       exitCode_ = result.exitCode;
     }
     return result.loopAgain;
   }
-  return external(cmd);
+  return external(args);
 }
 
 bool Executioner::external(std::vector<char *> &cmd) {
