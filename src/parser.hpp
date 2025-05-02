@@ -17,15 +17,10 @@ struct Node {
   Node *right = nullptr;
 };
 
-class Parser {
-  std::vector<char *> commands;
-
-public:
-  Parser(const std::string_view);
-  std::vector<char *> parseCmd(const std::string_view);
-  std::vector<char *> getNextCmd();
-  std::vector<Node> parseInput(const std::string_view);
-};
+namespace Parser {
+std::vector<char *> parseCmd(const std::string_view);
+std::vector<Node> parseInput(const std::string_view);
+}; // namespace Parser
 
 #endif // !PARSER_HPP
 // getline
