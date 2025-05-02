@@ -4,17 +4,36 @@
 #include <string_view>
 #include <vector>
 
+enum Separator {
+  NONE,
+  AND,
+  OR,
+  SEMICOLON,
+};
+struct Node {
+  Separator separator = NONE;
+  char *cmd = nullptr;
+  Node *left = nullptr;
+  Node *right = nullptr;
+};
+
 class Parser {
-  std::deque<char *> commands;
+  std::vector<char *> commands;
 
 public:
   Parser(const std::string_view);
   std::vector<char *> parseCmd(const std::string_view);
   std::vector<char *> getNextCmd();
-  std::deque<char *> parseInput(const std::string_view);
+  std::vector<Node> parseInput(const std::string_view);
 };
 
 #endif // !PARSER_HPP
+// getline
+// vec of node = parser.input(getline.input);
+// construct tree (vec of node)
+// // USE NAMESPACE FOR PARSER
+// execTree(tree)
+//
 // struct Node {
 //    std::string separator;
 //    std::vector<char*> cmd;
