@@ -5,13 +5,13 @@
 #include <vector>
 
 enum Separator {
-  NONE,
-  AND,
-  OR,
-  SEMICOLON,
+  S_NONE,
+  S_AND,
+  S_OR,
+  S_SEMICOLON,
 };
 struct Node {
-  Separator separator = NONE;
+  Separator separator = S_NONE;
   char *cmd = nullptr;
   Node *left = nullptr;
   Node *right = nullptr;
