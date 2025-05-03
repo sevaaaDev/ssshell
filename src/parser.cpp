@@ -9,10 +9,6 @@ std::vector<Node> Parser::parseInput(std::string_view inputBuf) {
     if (*c == '\0') {
       continue;
     }
-    if (*c == ' ') {
-      *c = '\0';
-      k = i + 1;
-    }
     if (*c == ';') {
       *c = '\0';
       k = i + 1;
