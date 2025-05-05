@@ -2,7 +2,9 @@
 #include "parser.hpp"
 #include "tree.hpp"
 #include <iostream>
+#include <memory>
 #include <string>
+#include <unistd.h>
 #include <vector>
 
 // TODO: shell exit code should be accesible to other class or func
@@ -10,10 +12,14 @@
 
 class Linewatcher {
 public:
+  std::string makePrompt(int exitCode) {
+    std::unique_ptr<char> cwd(getcwd(nullptr, 0));
+    return std::string(cwd.get()) + " " + std::to_string(exitCode) + " > ";
+  }
   bool isEOF_ = false;
   std::string getline(int exitCode) {
     std::string buf;
-    std::cout << "ssshell " << exitCode << " > ";
+    std::cout << makePrompt(exitCode);
     std::getline(std::cin, buf, '\n');
     if (std::cin.eof()) {
       isEOF_ = true;
