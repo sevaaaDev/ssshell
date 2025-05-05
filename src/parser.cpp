@@ -2,7 +2,7 @@
 #include <string_view>
 #include <vector>
 
-std::vector<Node> Parser::parseInput(std::string_view inputBuf) {
+std::vector<Node> Parser::getCommands(std::string_view inputBuf) {
   std::vector<Node> parsed;
   for (int i = 0, k = i; i < inputBuf.size(); i++) {
     char *c = const_cast<char *>(&inputBuf[i]);
@@ -37,7 +37,7 @@ std::vector<Node> Parser::parseInput(std::string_view inputBuf) {
   return parsed;
 }
 
-std::vector<char *> Parser::parseCmd(std::string_view cmd) {
+std::vector<char *> Parser::getArgs(std::string_view cmd) {
   std::vector<char *> parsed;
   for (int i = 0, k = i; i < cmd.size(); i++) {
     char *c = const_cast<char *>(&cmd[i]);

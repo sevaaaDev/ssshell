@@ -18,8 +18,8 @@ struct Node {
 };
 
 namespace Parser {
-std::vector<char *> parseCmd(const std::string_view);
-std::vector<Node> parseInput(const std::string_view);
+std::vector<char *> getArgs(const std::string_view);
+std::vector<Node> getCommands(const std::string_view);
 }; // namespace Parser
 
 #endif // !PARSER_HPP
