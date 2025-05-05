@@ -2,9 +2,9 @@
 #include "./ut.hpp"
 #include <vector>
 
-int main() {
-  using namespace boost::ut;
-  using namespace boost::ut::spec;
+using namespace boost::ut;
+using namespace boost::ut::spec;
+suite<"tree_test"> tree_test = [] {
   describe("construct tree") = [] {
     std::vector<Node> v;
     v.push_back({.cmd = nullptr});
@@ -23,4 +23,4 @@ int main() {
     };
     it("should have left child") = [&root, &v] { expect(root->left == &v[1]); };
   };
-}
+};
