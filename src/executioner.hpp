@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+using BuiltinFunc = CmdResult (*)(std::vector<char *> &args);
 class Executioner {
 public:
   /*exit code of previous call*/
@@ -16,8 +17,8 @@ public:
   bool execWithPipe(std::vector<char *> &, std::vector<char *> &);
 
 private:
-  std::unordered_map<std::string, CmdResult (*)(void)> builtin_ = {
-      {"exit", &exit}};
+  std::unordered_map<std::string, BuiltinFunc> builtin_ = {{"exit", &exit},
+                                                           {"cd", &cd}};
   bool external(std::vector<char *> &cmd);
 };
 

@@ -10,7 +10,7 @@ bool Executioner::exec(std::string cmd, std::vector<char *> &args) {
   // TODO: does map store its key?
   // if not then we can use str view instead
   if (builtin_.count(cmd) == 1) {
-    auto result = builtin_[cmd]();
+    auto result = builtin_[cmd](args);
     if (result.exitCode >= 0) {
       exitCode_ = result.exitCode;
     }
