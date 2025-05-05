@@ -23,7 +23,7 @@ public:
 };
 bool execTree(Executioner &executioner, Node &node) {
   if (node.cmd) {
-    auto cmd = Parser::getArgs(node.cmd);
+    auto cmd = parser::getArgs(node.cmd);
     return executioner.exec(cmd[0], cmd);
   }
   bool run = execTree(executioner, *node.left);
@@ -51,7 +51,7 @@ int main() {
       std::cout << std::endl;
       break;
     }
-    auto vecOfCmd = Parser::getCommands(input);
+    auto vecOfCmd = parser::getCommands(input);
     // construct tree
     Node *root = constructTree(vecOfCmd);
     run = execTree(executioner, *root);

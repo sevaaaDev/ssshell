@@ -17,10 +17,10 @@ struct Node {
   Node *right = nullptr;
 };
 
-namespace Parser {
+namespace parser {
 std::vector<char *> getArgs(const std::string_view);
 std::vector<Node> getCommands(const std::string_view);
-}; // namespace Parser
+}; // namespace parser
 
 #endif // !PARSER_HPP
 // getline
