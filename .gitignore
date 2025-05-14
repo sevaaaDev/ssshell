@@ -1,3 +1,6 @@
 main
 CMake*
 build
+*.o
+ssshell
+mise.local.toml
