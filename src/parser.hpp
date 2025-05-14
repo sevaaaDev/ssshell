@@ -1,5 +1,6 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
+#include "lexer.hpp"
 #include <deque>
 #include <string_view>
 #include <vector>
@@ -11,15 +12,25 @@ enum Separator {
   S_SEMICOLON,
 };
 struct Node {
-  Separator separator = S_NONE;
-  char *cmd = nullptr;
-  Node *left = nullptr;
-  Node *right = nullptr;
+  Token *token = nullptr;
+  std::vector<Node> children{};
 };
 
+class Parser {
+public:
+  Parser(std::vector<Token> &tokens) : tokens_(tokens) {};
+  Node parsing(int minBindingPower);
+
+private:
+  std::vector<Token> &tokens_;
+  int i_ = 0;
+  Token &next();
+  Token &peek();
+};
 namespace parser {
 std::vector<char *> getArgs(const std::string_view);
-std::vector<Node> getCommands(const std::string_view);
+std::vector<Node> getCommands(const std::vector<Token>);
+std::vector<Node> parsing(int minBindingPower);
 }; // namespace parser
 
 #endif // !PARSER_HPP

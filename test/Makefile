@@ -1,4 +1,4 @@
-SRC = main.cpp parser_test.cpp ../src/parser.cpp tree_test.cpp builtincmd_test.cpp ../src/lexer.cpp lexer_test.cpp
+SRC = main.cpp parser_test.cpp ../src/parser.cpp ../src/lexer.cpp lexer_test.cpp
 OBJ = ${SRC:.cpp=.o}
 
 all: test

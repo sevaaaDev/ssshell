@@ -16,6 +16,12 @@ enum TokenType {
 struct Token {
   TokenType type;
   std::string string;
+  int bp() {
+    if (type == TKN_PIPE) {
+      return 2;
+    }
+    return 1;
+  }
 };
 
 class Lexer {
