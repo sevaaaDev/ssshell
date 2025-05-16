@@ -14,18 +14,21 @@ enum Separator {
 struct Node {
   Token *token = nullptr;
   std::vector<Node> children{};
+  std::string print();
 };
 
 class Parser {
 public:
   Parser(std::vector<Token> &tokens) : tokens_(tokens) {};
-  Node parsing(int minBindingPower);
+  Node E(int *err);
 
 private:
   std::vector<Token> &tokens_;
   int i_ = 0;
   Token &next();
-  Token &peek();
+  int peek(std::vector<TokenType> types);
+  Node T(int *err);
+  Node F(int *err);
 };
 namespace parser {
 std::vector<char *> getArgs(const std::string_view);

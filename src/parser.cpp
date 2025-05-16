@@ -1,30 +1,85 @@
 #include "parser.hpp"
+#include "lexer.hpp"
 #include <string_view>
 #include <vector>
 
-Node Parser::parsing(int minBindingPower) {
-  Node lhs = {.token = &(next())};
-  // TODO: refactor the if statement
-  // peek() should handle if there are no element left
-  if (i_ >= tokens_.size()) {
+std::string Node::print() {
+  std::string str = "(";
+  if (token != nullptr) {
+    str += token->string;
+  }
+  for (auto child : children) {
+    str += child.print();
+  }
+  str += ")";
+  return str;
+}
+Token &Parser::next() { return tokens_[i_++]; }
+int Parser::peek(std::vector<TokenType> types) {
+  if (i_ >= tokens_.size())
+    return -1;
+  for (auto type : types) {
+    if (tokens_[i_].type == type) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+Node Tree(Node lhs, Node root, Node rhs) {
+  root.children.push_back(lhs);
+  root.children.push_back(rhs);
+  return root;
+}
+
+Node Parser::E(int *err) {
+  Node lhs = T(err);
+  if (*err) {
     return lhs;
   }
-  while (peek().bp() > minBindingPower) {
-    Node op = {.token = &(next())};
-    Node rhs = parsing(op.token->bp());
-    op.children.push_back(lhs);
-    op.children.push_back(rhs);
-    lhs = op;
-    if (i_ >= tokens_.size()) {
-      break;
+  Node op;
+  Node rhs;
+  while (peek({TKN_AND, TKN_OR, TKN_SEMICOLON}) == 1) {
+    op = {.token = &next()};
+    rhs = T(err);
+    if (*err) {
+      return rhs;
     }
+    lhs = Tree(lhs, op, rhs);
   }
   return lhs;
 }
 
-Token &Parser::next() { return tokens_[i_++]; }
-Token &Parser::peek() { return tokens_[i_]; }
-
+Node Parser::T(int *err) {
+  Node lhs = F(err);
+  if (*err) {
+    return lhs;
+  }
+  Node op;
+  Node rhs;
+  while (peek({TKN_PIPE}) == 1) {
+    op = {.token = &next()};
+    rhs = F(err);
+    if (*err) {
+      return rhs;
+    }
+    lhs = Tree(lhs, op, rhs);
+  }
+  return lhs;
+}
+Node Parser::F(int *err) {
+  int peekStatus = peek({TKN_STRING});
+  if (peekStatus == -1) {
+    *err = 2;
+    return {};
+  }
+  if (peekStatus == 0) {
+    *err = 1;
+  }
+  Node lhs = {.token = &next()};
+  // if lhs is not string, error
+  return lhs;
+}
 std::vector<char *> parser::getArgs(std::string_view cmd) {
   std::vector<char *> parsed;
   for (int i = 0, k = i; i < cmd.size(); i++) {
