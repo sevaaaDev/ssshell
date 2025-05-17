@@ -5,16 +5,11 @@
 #include <string_view>
 #include <vector>
 
-enum Separator {
-  S_NONE,
-  S_AND,
-  S_OR,
-  S_SEMICOLON,
-};
 struct Node {
   Token *token = nullptr;
   std::vector<Node> children{};
   std::string print();
+  void flat();
 };
 
 class Parser {
@@ -30,6 +25,7 @@ private:
   Node T(int *err);
   Node F(int *err);
 };
+
 namespace parser {
 std::vector<char *> getArgs(const std::string_view);
 std::vector<Node> getCommands(const std::vector<Token>);

@@ -14,6 +14,23 @@ std::string Node::print() {
   str += ")";
   return str;
 }
+void Node::flat() {
+  if (token == nullptr || token->type != TKN_PIPE)
+    return;
+  std::vector<Node> newChildren;
+  for (Node &child : children) {
+    if (child.token != nullptr && child.token->type != TKN_PIPE) {
+      newChildren.push_back(child);
+    }
+    if (child.token != nullptr && child.token->type == TKN_PIPE) {
+      child.flat();
+      for (Node &grandChild : child.children) {
+        newChildren.push_back(grandChild);
+      }
+    }
+  }
+  children = newChildren;
+}
 Token *Parser::next() {
   if (i_ >= tokens_.size()) {
     return nullptr;
@@ -71,6 +88,7 @@ Node Parser::T(int *err) {
       return rhs;
     }
     lhs = Tree(lhs, op, rhs);
+    lhs.flat();
   }
   return lhs;
 }

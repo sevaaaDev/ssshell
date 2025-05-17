@@ -100,5 +100,21 @@ suite<"parser_test"> parser_test = [] {
       expect(root.print() == "()") << root.print();
       expect(e == 1_i);
     };
+    it("should flatten multiple pipe") = [] {
+      std::vector<Token> tokens;
+      Token c1 = {.type = TKN_STRING, .string = "ls"};
+      Token op = {.type = TKN_PIPE, .string = "|"};
+      Token c2 = {.type = TKN_STRING, .string = "ls"};
+      tokens.push_back(c1);
+      tokens.push_back(op);
+      tokens.push_back(c2);
+      tokens.push_back({.type = TKN_PIPE, .string = "|"});
+      tokens.push_back({.type = TKN_STRING, .string = "echo"});
+      Parser parser(tokens);
+      int e = 0;
+      Node root = parser.E(&e);
+      expect(root.print() == "(|(ls)(ls)(echo))") << root.print();
+      expect(e == 0_i);
+    };
   };
 };
