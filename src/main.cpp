@@ -1,6 +1,6 @@
 #include "executioner.hpp"
+#include "lexer.hpp"
 #include "parser.hpp"
-#include "tree.hpp"
 #include <iostream>
 #include <memory>
 #include <string>
@@ -28,22 +28,22 @@ public:
   }
 };
 bool execTree(Executioner &executioner, Node &node) {
-  if (node.cmd) {
-    auto cmd = parser::getArgs(node.cmd);
+  if (node.token->type == TKN_STRING) {
+    auto cmd = parser::getArgs(node.token->string);
     return executioner.exec(cmd[0], cmd);
   }
-  bool run = execTree(executioner, *node.left);
+  bool run = execTree(executioner, node.children[0]);
   if (run == false) {
     return run;
   }
-  if (node.separator == S_SEMICOLON) {
-    return execTree(executioner, *node.right);
+  if (node.token->type == TKN_SEMICOLON) {
+    return execTree(executioner, node.children[1]);
   }
-  if (node.separator == S_AND && executioner.exitCode_ == 0) {
-    return execTree(executioner, *node.right);
+  if (node.token->type == TKN_AND && executioner.exitCode_ == 0) {
+    return execTree(executioner, node.children[1]);
   }
-  if (node.separator == S_OR && executioner.exitCode_ != 0) {
-    return execTree(executioner, *node.right);
+  if (node.token->type == TKN_OR && executioner.exitCode_ == 1) {
+    return execTree(executioner, node.children[1]);
   }
   return run;
 }
@@ -57,10 +57,19 @@ int main() {
       std::cout << std::endl;
       break;
     }
-    auto vecOfCmd = parser::getCommands(input);
-    // construct tree
-    Node *root = constructTree(vecOfCmd);
-    run = execTree(executioner, *root);
+    Lexer lexer(input);
+    auto tokens = lexer.getTokens();
+    Parser parser(tokens);
+    int err = 0;
+    Node root = parser.E(&err);
+    // if err
+
+    // "ls -la || echo hello" linewatcher
+    // {STRING, ls -la} {OR, ||} {STRING, echo hello} lexer
+    // tree of token parser
+    // char * []= tree.left.token.string.map(' ' -> '\0') final lexer / args
+    // exec
+    run = execTree(executioner, root);
     // TODO: we use ptr and ref randomly, please pick one or try to use it in
     // make sense scenario
   } while (run);
