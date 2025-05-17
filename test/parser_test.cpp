@@ -98,7 +98,7 @@ suite<"parser_test"> parser_test = [] {
       int e = 0;
       Node root = parser.E(&e);
       expect(root.print() == "()") << root.print();
-      expect(e == 2_i);
+      expect(e == 1_i);
     };
   };
 };

@@ -25,7 +25,7 @@ public:
 private:
   std::vector<Token> &tokens_;
   int i_ = 0;
-  Token &next();
+  Token *next();
   int peek(std::vector<TokenType> types);
   Node T(int *err);
   Node F(int *err);

@@ -14,10 +14,17 @@ std::string Node::print() {
   str += ")";
   return str;
 }
-Token &Parser::next() { return tokens_[i_++]; }
+Token *Parser::next() {
+  if (i_ >= tokens_.size()) {
+    return nullptr;
+  };
+  return &tokens_[i_++];
+}
+
 int Parser::peek(std::vector<TokenType> types) {
-  if (i_ >= tokens_.size())
-    return -1;
+  if (i_ >= tokens_.size()) {
+    return 0;
+  }
   for (auto type : types) {
     if (tokens_[i_].type == type) {
       return 1;
@@ -39,8 +46,8 @@ Node Parser::E(int *err) {
   }
   Node op;
   Node rhs;
-  while (peek({TKN_AND, TKN_OR, TKN_SEMICOLON}) == 1) {
-    op = {.token = &next()};
+  while (peek({TKN_AND, TKN_OR, TKN_SEMICOLON})) {
+    op = {.token = next()};
     rhs = T(err);
     if (*err) {
       return rhs;
@@ -57,8 +64,8 @@ Node Parser::T(int *err) {
   }
   Node op;
   Node rhs;
-  while (peek({TKN_PIPE}) == 1) {
-    op = {.token = &next()};
+  while (peek({TKN_PIPE})) {
+    op = {.token = next()};
     rhs = F(err);
     if (*err) {
       return rhs;
@@ -69,14 +76,10 @@ Node Parser::T(int *err) {
 }
 Node Parser::F(int *err) {
   int peekStatus = peek({TKN_STRING});
-  if (peekStatus == -1) {
-    *err = 2;
-    return {};
-  }
-  if (peekStatus == 0) {
+  if (!peekStatus) {
     *err = 1;
   }
-  Node lhs = {.token = &next()};
+  Node lhs = {.token = next()};
   // if lhs is not string, error
   return lhs;
 }
