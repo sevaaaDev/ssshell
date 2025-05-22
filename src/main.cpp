@@ -1,4 +1,5 @@
 #include "executioner.hpp"
+#include "executioner_utils.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 #include <iostream>
@@ -27,32 +28,12 @@ public:
     return buf;
   }
 };
-bool execTree(Executioner &executioner, Node &node) {
-  if (node.token->type == TKN_STRING) {
-    auto cmd = parser::getArgs(node.token->string);
-    return executioner.exec(cmd[0], cmd);
-  }
-  bool run = execTree(executioner, node.children[0]);
-  if (run == false) {
-    return run;
-  }
-  if (node.token->type == TKN_SEMICOLON) {
-    return execTree(executioner, node.children[1]);
-  }
-  if (node.token->type == TKN_AND && executioner.exitCode_ == 0) {
-    return execTree(executioner, node.children[1]);
-  }
-  if (node.token->type == TKN_OR && executioner.exitCode_ == 1) {
-    return execTree(executioner, node.children[1]);
-  }
-  return run;
-}
 int main() {
   Executioner executioner;
   Linewatcher linewatcher;
   bool run = false;
   do {
-    std::string input = linewatcher.getline(executioner.exitCode_);
+    std::string input = linewatcher.getline(executioner.getExitCode());
     if (linewatcher.isEOF_) {
       std::cout << std::endl;
       break;
@@ -69,9 +50,10 @@ int main() {
     // tree of token parser
     // char * []= tree.left.token.string.map(' ' -> '\0') final lexer / args
     // exec
-    run = execTree(executioner, root);
+    run = Exec::execTree(executioner, root);
+    executioner.wait();
     // TODO: we use ptr and ref randomly, please pick one or try to use it in
     // make sense scenario
   } while (run);
-  return executioner.exitCode_;
+  return executioner.getExitCode();
 }

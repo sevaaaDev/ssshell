@@ -1,17 +1,24 @@
 #ifndef BUILTIN_COMMAND_HPP
 #define BUILTIN_COMMAND_HPP
-#include <string_view>
-#define STOP_LOOP false
-#define KEEP_LOOP true
 #include <cstdlib>
+#include <string>
+#include <string_view>
 #include <unistd.h>
 #include <vector>
+#define STOP_LOOP false
+#define KEEP_LOOP true
 struct CmdResult {
   int exitCode;
   bool loopAgain;
 };
 
-inline CmdResult exit(std::vector<char *> &_) { return {-1, STOP_LOOP}; }
+inline CmdResult exit(std::vector<char *> &args) {
+  int exitCode = -1;
+  // if (args.size() >= 2) {
+  //   exitCode = std::stoi(args[1]);
+  // }
+  return {exitCode, STOP_LOOP};
+}
 inline char *getTargetDir(std::vector<char *> &args) {
   char *targetDir = nullptr;
   if (args.size() == 1) {
