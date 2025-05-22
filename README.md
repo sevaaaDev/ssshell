@@ -1,10 +1,10 @@
 ## Current Goals
-- [x] history !! and !n
-- [ ] redirection (> >> < <<) and pipe
-- [ ] and (&&) or (||)
-- [ ] multiple command in one line (;)
+- [ ] piping
+- [x] and (&&) or (||) 
+- [x] multiple command in one line (;)
 
 ## Someday Goals
+- [ ] redirection (> >> < <<)
 - [ ] history arrow key keybind
 - [ ] job control
 - [ ] quotes and escape
