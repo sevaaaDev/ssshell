@@ -1,11 +1,13 @@
+## features
+- command piping
+- conditional using and (&&) or (||) 
+- multiple command in one line (;)
+
 ## Current Goals
-- [ ] piping
-- [x] and (&&) or (||) 
-- [x] multiple command in one line (;)
+- [ ] history arrow key keybind
 
 ## Someday Goals
 - [ ] redirection (> >> < <<)
-- [ ] history arrow key keybind
 - [ ] job control
 - [ ] quotes and escape
 - [ ] globbing
