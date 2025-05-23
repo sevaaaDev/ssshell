@@ -1,4 +1,5 @@
 #include "executioner.hpp"
+#include <deque>
 #include <iostream>
 #include <optional>
 #include <string.h>
@@ -25,12 +26,15 @@ void Executioner::wait() {
   pids_.pop_back();
   wait(pid);
 }
-void Executioner::reap() { waitpid(-1, nullptr, 0); }
+void Executioner::reap() {
+  waitpid(-1, nullptr, 0);
+  pids_.pop_back();
+}
 
-bool Executioner::exec(std::string cmd, std::vector<char *> &args) {
+bool Executioner::exec(std::string cmd, std::vector<char *> &args, FDpair fd) {
   auto res = internal(args);
   if (!res) {
-    return external(args);
+    return external(args, fd);
   } else {
     return res.value();
   }
@@ -49,13 +53,22 @@ std::optional<bool> Executioner::internal(std::vector<char *> &cmd) {
   return std::nullopt;
 }
 
-bool Executioner::external(std::vector<char *> &cmd) {
+bool Executioner::external(std::vector<char *> &cmd, FDpair fd) {
   pid_t pid = fork();
   if (pid == -1) {
     std::cerr << "fork failed" << std::endl;
     return false;
   }
   if (pid == 0) {
+    // if write or read exist, dup
+    // close fd
+    if (fd.write) {
+      dup2(fd.write.value(), STDOUT_FILENO);
+    }
+    if (fd.read) {
+      dup2(fd.read.value(), STDIN_FILENO);
+    }
+    closePipeFD();
     int errcode = execvp(cmd[0], cmd.data());
     if (errcode == -1) {
       if (errno == ENOENT) {
@@ -73,5 +86,46 @@ bool Executioner::external(std::vector<char *> &cmd) {
   }
   return true;
 }
+
+void Executioner::closePipeFD() {
+  for (FDpair &pair : pipefds_) {
+    if (pair.read)
+      close(pair.read.value());
+    if (pair.write)
+      close(pair.write.value());
+  }
+  pipefds_.clear();
+}
+
+void Executioner::setupPipeFD(int count) {
+  std::deque<int> fd;
+  for (int i = 0; i < count; i++) {
+    int pipefd[2];
+    pipe(pipefd);
+    fd.push_back(pipefd[1]);
+    fd.push_back(pipefd[0]);
+  }
+  for (int i = 0; i < count + 1; i++) {
+    if (i == 0) {
+      pipefds_.push_back({.write = fd.front()});
+      fd.pop_front();
+      continue;
+    }
+    int r = fd.front();
+    fd.pop_front();
+    if (fd.empty()) {
+      pipefds_.push_back({.read = r});
+      continue;
+    }
+    int w = fd.front();
+    fd.pop_front();
+    pipefds_.push_back({w, r});
+  }
+
+  // 1
+  // fd.size = 2
+  //
+}
+const std::deque<FDpair> &Executioner::getPipeFDs() const { return pipefds_; }
 int Executioner::getExitCode() const { return exitCode_; }
 int Executioner::getPsCount() const { return pids_.size(); }

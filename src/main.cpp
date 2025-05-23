@@ -38,6 +38,11 @@ int main() {
       std::cout << std::endl;
       break;
     }
+    if (input.empty()) {
+
+      run = true;
+      continue;
+    }
     Lexer lexer(input);
     auto tokens = lexer.getTokens();
     Parser parser(tokens);
