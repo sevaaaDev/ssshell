@@ -72,11 +72,11 @@ bool Executioner::external(std::vector<char *> &cmd, FDpair fd) {
     int errcode = execvp(cmd[0], cmd.data());
     if (errcode == -1) {
       if (errno == ENOENT) {
-        std::cout << cmd[0] << ": command not found" << std::endl;
+        std::cout << "sssh: " << cmd[0] << ": command not found" << std::endl;
         exitCode_ = 127;
         return false;
       } else {
-        std::cout << strerror(errno) << std::endl;
+        std::cout << "sssh: " << strerror(errno) << std::endl;
         exitCode_ = 126;
         return false;
       }

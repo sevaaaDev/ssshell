@@ -8,9 +8,6 @@
 #include <unistd.h>
 #include <vector>
 
-// TODO: shell exit code should be accesible to other class or func
-// set it global?
-
 class Linewatcher {
 public:
   std::string makePrompt(int exitCode) {
@@ -48,17 +45,8 @@ int main() {
     Parser parser(tokens);
     int err = 0;
     Node root = parser.E(&err);
-    // if err
-
-    // "ls -la || echo hello" linewatcher
-    // {STRING, ls -la} {OR, ||} {STRING, echo hello} lexer
-    // tree of token parser
-    // char * []= tree.left.token.string.map(' ' -> '\0') final lexer / args
-    // exec
     run = Exec::execTree(executioner, root);
     executioner.wait();
-    // TODO: we use ptr and ref randomly, please pick one or try to use it in
-    // make sense scenario
   } while (run);
   return executioner.getExitCode();
 }

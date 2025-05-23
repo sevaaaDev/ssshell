@@ -21,7 +21,7 @@ inline CmdResult exit(std::vector<char *> &args) {
 }
 inline char *getTargetDir(std::vector<char *> &args) {
   char *targetDir = nullptr;
-  if (args.size() == 1) {
+  if (args.size() == 2 && args.back() == nullptr) {
     targetDir = std::getenv("HOME");
   } else {
     targetDir = args[1];

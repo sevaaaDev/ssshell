@@ -113,5 +113,6 @@ std::vector<char *> parser::getArgs(std::string_view cmd) {
       parsed.push_back(c);
     }
   }
+  parsed.push_back(nullptr);
   return parsed;
 }
