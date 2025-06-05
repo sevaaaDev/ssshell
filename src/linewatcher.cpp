@@ -1,4 +1,5 @@
 #include "linewatcher.hpp"
+#include <cstdlib>
 #include <deque>
 #include <iostream>
 #include <termios.h>
@@ -40,9 +41,10 @@ static KEYS parseSeq() {
 }
 std::string Linewatcher::getline() {
   std::deque<char> buf{};
+  std::deque<char> bufZero{};
   std::deque<char>::iterator cursor = buf.end();
   char c;
-  int historyIndex = -1;
+  int historyIndex = 0;
   isEOF_ = false;
   while (1) {
     char c = '\0';
@@ -54,20 +56,35 @@ std::string Linewatcher::getline() {
     if (c == '\x1b') {
       KEYS key = parseSeq();
       if (key == ARW_UP) {
-        buf = history_.getHistoryLine(historyIndex--);
-        // TODO: handle historyIndex
+        if (std::abs(historyIndex) == history_.getSize()) {
+          continue;
+        }
+        if (historyIndex == 0) {
+          bufZero = buf;
+        }
+        buf = history_.at(--historyIndex);
         cursor = buf.end();
         printBuf(buf);
       }
       if (key == ARW_DOWN) {
-        buf = history_.getHistoryLine(-1 * historyIndex--);
+        if (historyIndex >= 0) {
+          continue;
+        }
+        if (historyIndex == -1) {
+          historyIndex = 0;
+          buf = bufZero;
+          cursor = buf.end();
+          printBuf(buf);
+          continue;
+        }
+        buf = history_.at(++historyIndex);
         cursor = buf.end();
         printBuf(buf);
-        // history up
       }
       c = '\0';
     }
-    if (c == 127) {
+    if (c == 127 && !buf.empty()) {
+      historyIndex = 0;
       buf.pop_back();
       printBuf(buf);
       continue;

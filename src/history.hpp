@@ -7,7 +7,7 @@ public:
   int getMaxSize();
   /* return full list of history */
   const std::deque<std::deque<char>> &getHistory();
-  std::deque<char> getHistoryLine(int nth = 1);
+  std::deque<char> at(int nth);
   void clear();
   void push(std::deque<char> line);
 
