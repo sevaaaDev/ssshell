@@ -1,5 +1,5 @@
 
-SRC = ./src/executioner.cpp ./src/executioner_utils.cpp ./src/parser.cpp ./src/main.cpp ./src/builtins_command.hpp ./src/lexer.cpp
+SRC = ./src/executioner.cpp ./src/executioner_utils.cpp ./src/parser.cpp ./src/main.cpp ./src/builtins_command.hpp ./src/lexer.cpp ./src/linewatcher.cpp ./src/history.cpp
 OBJ = ${SRC:.c=.o}
 
 ssshell: ${OBJ}

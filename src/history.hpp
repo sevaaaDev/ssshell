@@ -1,19 +1,19 @@
 #ifndef HISTORY_HPP
 #define HISTORY_HPP
 #include <deque>
-#include <string>
 class History {
+public:
   int getSize();
   int getMaxSize();
   /* return full list of history */
-  const std::deque<std::string> &getHistory();
-  std::string getPrevLine(int nth);
+  const std::deque<std::deque<char>> &getHistory();
+  std::deque<char> getHistoryLine(int nth = 1);
   void clear();
-  void push(std::string_view line);
+  void push(std::deque<char> line);
 
 private:
   int maxHist_ = 5;
-  std::deque<std::string> queue_;
+  std::deque<std::deque<char>> queue_;
 };
 
 #endif // !HISTORY_HPP

@@ -1,42 +1,36 @@
 #include "executioner.hpp"
 #include "executioner_utils.hpp"
+#include "history.hpp"
 #include "lexer.hpp"
+#include "linewatcher.hpp"
 #include "parser.hpp"
 #include <iostream>
-#include <memory>
 #include <string>
+#include <termios.h>
 #include <unistd.h>
-#include <vector>
 
-class Linewatcher {
-public:
-  std::string makePrompt(int exitCode) {
-    std::unique_ptr<char> cwd(getcwd(nullptr, 0));
-    return std::string(cwd.get()) + " " + std::to_string(exitCode) + " > ";
-  }
-  bool isEOF_ = false;
-  std::string getline(int exitCode) {
-    std::string buf;
-    std::cout << makePrompt(exitCode);
-    std::getline(std::cin, buf, '\n');
-    if (std::cin.eof()) {
-      isEOF_ = true;
-    }
-    return buf;
-  }
-};
+termios origTermios;
+void enableRaw() {
+  tcgetattr(STDIN_FILENO, &origTermios);
+  termios raw = origTermios;
+  raw.c_lflag &= ~(ECHO | ICANON);
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+}
+void disableRaw() { tcsetattr(STDIN_FILENO, TCSAFLUSH, &origTermios); }
+
 int main() {
+  enableRaw();
+  History history;
   Executioner executioner;
-  Linewatcher linewatcher;
+  Linewatcher linewatcher(history);
   bool run = false;
   do {
-    std::string input = linewatcher.getline(executioner.getExitCode());
-    if (linewatcher.isEOF_) {
+    std::string input = linewatcher.getline();
+    if (linewatcher.isEOF()) {
       std::cout << std::endl;
       break;
     }
     if (input.empty()) {
-
       run = true;
       continue;
     }
@@ -48,5 +42,6 @@ int main() {
     run = Exec::execTree(executioner, root);
     executioner.wait();
   } while (run);
+  disableRaw();
   return executioner.getExitCode();
 }
