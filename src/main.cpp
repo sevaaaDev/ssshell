@@ -5,6 +5,7 @@
 #include "linewatcher.hpp"
 #include "parser.hpp"
 #include <iostream>
+#include <memory>
 #include <string>
 #include <termios.h>
 #include <unistd.h>
@@ -18,6 +19,11 @@ void enableRaw() {
 }
 void disableRaw() { tcsetattr(STDIN_FILENO, TCSAFLUSH, &origTermios); }
 
+std::string getCWD() {
+  auto ptr = std::make_unique<char *>(get_current_dir_name());
+  return *ptr.get();
+}
+
 int main() {
   enableRaw();
   History history;
@@ -25,7 +31,8 @@ int main() {
   Linewatcher linewatcher(history);
   bool run = false;
   do {
-    std::string input = linewatcher.getline();
+    std::string input = linewatcher.getline(
+        getCWD() + " " + std::to_string(executioner.getExitCode()) + "> ");
     if (linewatcher.isEOF()) {
       std::cout << std::endl;
       break;

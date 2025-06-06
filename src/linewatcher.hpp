@@ -7,7 +7,7 @@
 class Linewatcher {
 public:
   Linewatcher(History &history) : history_(history) {}
-  std::string getline();
+  std::string getline(const std::string &prompt);
   bool isEOF();
 
 private:

@@ -15,11 +15,31 @@ std::deque<char> History::at(int nth) {
     index = 0;
   return queue_[index];
 };
+std::deque<char> History::prev() {
+  if (getSize() == 0) {
+    return {};
+  }
+  if (++index_ >= getSize()) {
+    index_ = getSize() - 1;
+  }
+  return queue_[index_];
+};
 
+std::deque<char> History::next() {
+  if (--index_ < 0) {
+    index_ = -1;
+    return {};
+  }
+  return queue_[index_];
+};
+
+int History::index() { return index_; };
+void History::resetIndex() { index_ = -1; };
 void History::clear() { queue_.clear(); };
 void History::push(std::deque<char> line) {
-  queue_.push_back(line);
+  queue_.push_front(line);
   if (getSize() > maxHist_) {
-    queue_.pop_front();
+    queue_.pop_back();
   }
+  resetIndex();
 };

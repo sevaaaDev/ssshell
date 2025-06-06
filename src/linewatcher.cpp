@@ -8,7 +8,6 @@
 bool Linewatcher::isEOF() { return isEOF_; }
 
 static void printBuf(const std::deque<char> &buf) {
-  std::cout << "\x1b[1K\r";
   std::flush(std::cout);
   for (auto c : buf) {
     std::cout << c;
@@ -39,64 +38,64 @@ static KEYS parseSeq() {
   }
   return ESC;
 }
-std::string Linewatcher::getline() {
+inline void printSameLine(std::string_view text) {
+  std::cout << "\x1b[1K\r";
+  std::cout << text;
+  std::flush(std::cout);
+}
+std::string Linewatcher::getline(const std::string &prompt) {
   std::deque<char> buf{};
   std::deque<char> bufZero{};
   std::deque<char>::iterator cursor = buf.end();
-  char c;
-  int historyIndex = 0;
   isEOF_ = false;
+  printSameLine(prompt);
+  char c = '\0';
   while (1) {
-    char c = '\0';
-    read(STDIN_FILENO, &c, 1);
+    int nread = read(STDIN_FILENO, &c, 1);
+    if (nread == 0) continue;
     if (c == '\n') {
       std::cout << std::endl;
       break;
-    }
-    if (c == '\x1b') {
-      KEYS key = parseSeq();
-      if (key == ARW_UP) {
-        if (std::abs(historyIndex) == history_.getSize()) {
-          continue;
-        }
-        if (historyIndex == 0) {
-          bufZero = buf;
-        }
-        buf = history_.at(--historyIndex);
-        cursor = buf.end();
-        printBuf(buf);
-      }
-      if (key == ARW_DOWN) {
-        if (historyIndex >= 0) {
-          continue;
-        }
-        if (historyIndex == -1) {
-          historyIndex = 0;
-          buf = bufZero;
-          cursor = buf.end();
-          printBuf(buf);
-          continue;
-        }
-        buf = history_.at(++historyIndex);
-        cursor = buf.end();
-        printBuf(buf);
-      }
-      c = '\0';
-    }
-    if (c == 127 && !buf.empty()) {
-      historyIndex = 0;
-      buf.pop_back();
-      printBuf(buf);
-      continue;
     }
     if (c == 4) {
       isEOF_ = true;
       break;
     }
-    if (c != '\0') {
-      buf.insert(buf.end(), c);
-      printBuf(buf);
+    switch (c) {
+    case 127:
+      if (!buf.empty()) {
+        history_.resetIndex();
+        buf.pop_back();
+      }
+      break;
+    case '\x1b': {
+      KEYS key = parseSeq();
+      if (key == ARW_UP) {
+        if (history_.index() == -1) {
+          bufZero = buf;
+        }
+        std::deque<char> histBuf = history_.prev();
+        if (!histBuf.empty()) {
+          buf = histBuf;
+          cursor = buf.end();
+        }
+      }
+      if (key == ARW_DOWN) {
+        std::deque<char> histBuf = history_.next();
+        if (histBuf.empty()) {
+          buf = bufZero;
+        } else {
+          buf = histBuf;
+        }
+        cursor = buf.end();
+      }
+      break;
     }
+    default:
+      buf.insert(buf.end(), c);
+    }
+    printSameLine(prompt);
+    printBuf(buf);
   }
   std::string str{};
   if (!isEOF_) {
@@ -107,3 +106,39 @@ std::string Linewatcher::getline() {
   }
   return str;
 }
+// if (c == 127 && !buf.empty()) {
+//   history_.resetIndex();
+//   buf.pop_back();
+// }
+// if (c == '\x1b') {
+//   KEYS key = parseSeq();
+//   if (key == ARW_UP) {
+//     if (history_.index() == -1) {
+//       bufZero = buf;
+//     }
+//     std::deque<char> histBuf = history_.prev();
+//     if (!histBuf.empty()) {
+//       buf = histBuf;
+//     }
+//     cursor = buf.end();
+//     print(prompt);
+//     printBuf(buf);
+//   }
+//   if (key == ARW_DOWN) {
+//     std::deque<char> histBuf = history_.next();
+//     if (histBuf.empty()) {
+//       buf = bufZero;
+//     } else {
+//       buf = histBuf;
+//     }
+//     cursor = buf.end();
+//     print(prompt);
+//     printBuf(buf);
+//   }
+//   c = '\0';
+// }
+// if (c != '\0') {
+//   buf.insert(buf.end(), c);
+//   print(prompt);
+//   printBuf(buf);
+// }
