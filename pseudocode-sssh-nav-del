@@ -1,0 +1,41 @@
+left() {
+  cursor = moveLeft()
+}
+right() {
+  cursor = moveRight()
+}
+saveCursorPos() {
+  std::cout << "\x1b7" << std::flush
+}
+restoreCursorPos() {
+  std::cout << "\x1b8" << std::flush
+}
+
+write(char c) {
+  buf.insert(cursor, c)
+  right()
+  saveCursorPos()
+  printBuf(buf)
+  restoreCursorPos()
+}
+
+del() {
+  buf.erase(cursor-1)
+  left()
+  saveCursorPos()
+  printBuf(buf)
+  restoreCursorPos()
+}
+
+getline() {
+  KEYS keyCmd = NONE;
+  char c = getChar(&keyCmd);
+  if keyCmd != NONE {
+     handleCmd(keyCmd);
+  }
+  if c != '\0' {
+     buffer.write(c)
+     term::moveCursor(1)
+     term::reprint(buffer);
+  }
+}
